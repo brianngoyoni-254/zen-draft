@@ -1,0 +1,30 @@
+{
+  "tasks": [
+    {
+      "name": "Toy Tales Lab",
+      "priority": "medium",
+      "deadline": "2026-05-15T13:00",
+      "reminder": "2026-05-15T11:00",
+      "category": "Labs",
+      "completed": false,
+      "createdAt": "2026-05-14T22:57:04.657Z",
+      "id": "aDF3uYIup94"
+    }
+  ],
+  "categories": [
+    {
+      "id": "labs",
+      "name": "Labs"
+    },
+    {
+      "id": "quizzes",
+      "name": "Quizzes"
+    },
+    {
+      "id": "assignments",
+      "name": "Assignments"
+    }
+  ],
+  "alerts": [],
+  "$schema": "./node_modules/json-server/schema.json"
+}
