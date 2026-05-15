@@ -10,13 +10,16 @@ export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
+
         <Route path="/" element={<Home />} />
+
         <Route element={<Sidebar />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/add-task" element={<AddTask />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/alerts" element={<Alerts />} />
         </Route>
+
       </Routes>
     </BrowserRouter>
   )

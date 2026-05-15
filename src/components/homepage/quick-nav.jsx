@@ -7,7 +7,7 @@ const navLinks = [
     { label: 'Dashboard', sub: 'Check Reports', icon: ChartColumnStacked, path: '/dashboard', color:'text-emerald-600 bgg-emerald-50' },
     { label: 'Add Task', sub: 'Add a New Task', icon: CirclePlus, path: '/add-task', color:'text-amber-600 bg-amber-50' },
     { label: 'Categories', sub: 'Browse Categories', icon: Folders, path: '/categories', color:'text-violet-600 bg-violet-50' },
-    { label: 'Notifications', sub: 'Check alerts', icon: Bell, path: '/notifications', color: 'text-rose-600 bg-rose-50' },
+    { label: 'Alerts', sub: 'Check alerts', icon: Bell, path: '/alerts', color: 'text-rose-600 bg-rose-50' },
 
 ]
 
