@@ -144,3 +144,8 @@ json-server --watch db.json --port 3001
 * Mobile app version (React Native)
 
 ---
+## Designed by A Team Of 4 Software Developers
+* Mitchelle Wanjugu
+* Samson Kangara
+* Lynet Murathimi
+* Brian Ngoyoni
