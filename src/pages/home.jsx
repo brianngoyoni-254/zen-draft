@@ -11,7 +11,6 @@ import { getTasks, updateTask } from '../services/api'
 
 export default function Home() {
 
-  // STATES
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const location = useLocation()
@@ -58,7 +57,7 @@ export default function Home() {
     }
   }
 
-  // PENDING TASKS (SAFE SORT)
+  // PENDING TASKS
   const pending = tasks
     .filter(t => !t.completed)
     .sort((a, b) => {
@@ -70,12 +69,11 @@ export default function Home() {
   const completed = tasks.filter(t => t.completed)
 
   return (
-
     <div className="min-h-screen w-full bg-gray-50 overflow-x-hidden">
 
       <Greeting />
 
-      {/* RESPONSIVE WRAPPER (NO OVERFLOW) */}
+      {/* WRAPPER */}
       <div className="w-full max-w-full px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-5 sm:space-y-6">
 
         {/* QUICK NAV */}
@@ -83,7 +81,7 @@ export default function Home() {
           <QuickNav />
         </div>
 
-        {/* PROGRESS BAR */}
+        {/* PROGRESS */}
         <div className="w-full max-w-full overflow-hidden">
           <ProgressBar
             total={tasks.length}
@@ -92,7 +90,7 @@ export default function Home() {
           />
         </div>
 
-        {/* GRID: prevents overflow on small phones */}
+        {/* GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full max-w-full">
 
           {/* Pending */}

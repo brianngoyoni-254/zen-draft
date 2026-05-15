@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import {
+  Outlet,
+  NavLink,
+  useNavigate,
+  useLocation,
+} from 'react-router-dom'
+
 import {
   ChartColumnStacked,
   CirclePlus,
@@ -61,23 +67,31 @@ const ACCENT_STYLES = {
 }
 
 export default function Sidebar() {
-    // STATES
-    const [open, setOpen] = useState(false)
-    const navigate = useNavigate()
 
-    // HOOKS
+  // STATES
+  const [open, setOpen] = useState(false)
 
-    // For mobile responsiveness
-    useEffect(() => { setOpen(false) }, [location.pathname])
+  // HOOKS
+  const navigate = useNavigate()
+  const location = useLocation()
 
-    // Lock body scroll when mobile sidebar is open
-    useEffect(() => {
-        document.body.style.overflow = open ? 'hidden' : ''
-        return () => { document.body.style.overflow = '' }
-    }, [open])
+  // CLOSE SIDEBAR ON ROUTE CHANGE
+  useEffect(() => {
+    setOpen(false)
+  }, [location.pathname])
+
+  // LOCK BODY SCROLL ON MOBILE
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [open])
 
   return (
-    <div className="min-h-screen w-full h-full bg-gray-50 flex">
+
+    <div className="min-h-screen w-full bg-gray-50 flex">
 
       {/* Mobile overlay */}
       {open && (
@@ -90,86 +104,121 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200
-          flex flex-col z-30 transition-transform duration-300
+          fixed top-0 left-0 h-screen w-64 bg-white border-r border-gray-200
+          flex flex-col z-30
           ${open ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0 md:static md:flex
+          md:translate-x-0 md:sticky md:top-0
         `}
       >
+
         {/* Sidebar header */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100">
+
           <span className="text-base font-semibold text-violet-600 tracking-tight">
-            Zen<span className="text-gray-900">Planner</span> 
+            Zen<span className="text-gray-900">Planner</span>
           </span>
+
           <button
             onClick={() => setOpen(false)}
-            className="md:hidden p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            className="md:hidden p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
           >
             <X size={18} />
           </button>
+
         </div>
 
         {/* Home */}
         <div className="px-3 pt-4 pb-2">
+
           <button
             onClick={() => navigate('/')}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-all duration-150 group"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-50 group"
           >
-            <span className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition">
+
+            <span className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center group-hover:bg-gray-200">
               <House size={16} className="text-gray-500" />
             </span>
+
             Home
+
           </button>
+
         </div>
 
-        {/* Pages Divider */}
+        {/* Pages divider */}
         <div className="px-5 pb-2">
+
           <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
             Pages
           </p>
+
         </div>
 
         {/* Nav links */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+
           {navLinks.map(({ label, icon: Icon, path, accent }) => {
+
             const styles = ACCENT_STYLES[accent]
+
             return (
+
               <NavLink
                 key={path}
                 to={path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm border transition-all duration-150
-                  ${isActive
-                    ? `${styles.active} border font-medium`
-                    : 'text-gray-500 border-transparent hover:text-gray-800 hover:bg-gray-50'
+                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm border
+                  ${
+                    isActive
+                      ? `${styles.active} border font-medium`
+                      : 'text-gray-500 border-transparent hover:text-gray-800 hover:bg-gray-50'
                   }`
                 }
               >
+
                 {({ isActive }) => (
                   <>
+
                     <span
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition
-                        ${isActive ? styles.icon : 'bg-gray-100 text-gray-400'}`}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center
+                      ${
+                        isActive
+                          ? styles.icon
+                          : 'bg-gray-100 text-gray-400'
+                      }`}
                     >
                       <Icon size={16} />
                     </span>
-                    <span className="flex-1">{label}</span>
+
+                    <span className="flex-1">
+                      {label}
+                    </span>
+
                     {isActive && (
-                      <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${styles.dot}`}
+                      />
                     )}
+
                   </>
                 )}
+
               </NavLink>
+
             )
           })}
+
         </nav>
 
-        {/* Sidebar footer */}
+        {/* Footer */}
         <div className="px-5 py-4 border-t border-gray-100">
+
           <p className="text-xs text-gray-300">
             Zen Planner &copy; {new Date().getFullYear()}
           </p>
+
         </div>
+
       </aside>
 
       {/* Main content */}
@@ -177,24 +226,29 @@ export default function Sidebar() {
 
         {/* Mobile topbar */}
         <header className="md:hidden flex items-center justify-between px-5 py-4 bg-white border-b border-gray-200">
+
           <button
             onClick={() => setOpen(true)}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition"
+            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100"
           >
             <Menu size={20} />
           </button>
+
           <span className="text-sm font-semibold text-gray-900">
             Zen<span className="text-violet-600">Planner</span>
           </span>
-          <div className="w-8" /> {/* spacer to center the title */}
+
+          <div className="w-8" />
+
         </header>
 
         {/* Page content */}
-        <main className="flex-1">
+        <main className="flex-1 min-h-screen">
           <Outlet />
         </main>
 
       </div>
+
     </div>
   )
 }
