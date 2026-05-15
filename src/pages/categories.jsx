@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Check, Folders, Pen, Plus, X } from 'lucide-react'
 
-// ✅ IMPORT API FUNCTIONS
+//  IMPORT API FUNCTIONS
 import {
   getTasks,
   updateTask,
@@ -48,7 +48,7 @@ export default function Categories() {
           getTasks(),
         ])
 
-        // ✅ ensure arrays even if API returns null/undefined
+        
         setCategories(Array.isArray(cats) ? cats : [])
         setTasks(Array.isArray(taskData) ? taskData : [])
 
@@ -66,7 +66,7 @@ export default function Categories() {
     if (addingCat) newCatInputRef.current?.focus()
   }, [addingCat])
 
-  // ✅ safer mapping (prevents crash if categories empty)
+  // safer mapping (prevents crash if categories empty)
   const tagClasses = Object.fromEntries(
     (categories || []).map((c, i) => [
       c?.name,
