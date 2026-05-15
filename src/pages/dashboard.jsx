@@ -14,7 +14,8 @@ import {
   Legend,
 } from 'recharts'
 
-const API = 'http://localhost:3001'
+// import api
+import { getTasks } from '../services/api'
 
 const COLORS = [
   '#8B5CF6', '#10B981', '#F59E0B', '#EF4444',
@@ -27,7 +28,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 // Stat Card
 function StatCard({ label, value, dotColor }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-5">
+    <div className="bg-white border border-gray-200 rounded-2xl p-5 w-full">
       <div className="flex items-center gap-2 mb-2">
         <span className={`w-2 h-2 rounded-full ${dotColor}`} />
         <p className="text-xs text-gray-400 font-medium">{label}</p>
@@ -40,14 +41,14 @@ function StatCard({ label, value, dotColor }) {
 // Chart Card
 function ChartCard({ title, children }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-6">
+    <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 w-full overflow-hidden">
       <p className="text-sm font-medium text-gray-800 mb-5">{title}</p>
-      {children}
+      <div className="w-full overflow-x-auto">
+        {children}
+      </div>
     </div>
   )
 }
-
-// Main Component
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([])
@@ -56,8 +57,8 @@ export default function Dashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${API}/tasks`)
-        const data = await res.json()
+        
+        const data = await getTasks()
         setTasks(data)
       } catch (err) {
         console.error('Could not fetch tasks:', err)
@@ -68,7 +69,7 @@ export default function Dashboard() {
     load()
   }, [])
 
-  // Retrieved Data
+  // Derived Data
   const completed = tasks.filter((t) => t.completed)
   const pending = tasks.filter((t) => !t.completed)
 
@@ -93,9 +94,12 @@ export default function Dashboard() {
     const cat = t.category || 'Uncategorized'
     categoryMap[cat] = (categoryMap[cat] || 0) + 1
   })
-  const categoryData = Object.entries(categoryMap).map(([name, value]) => ({ name, value }))
 
-  // Tooltip Style
+  const categoryData = Object.entries(categoryMap).map(([name, value]) => ({
+    name,
+    value,
+  }))
+
   const tooltipStyle = {
     contentStyle: {
       borderRadius: '12px',
@@ -107,14 +111,14 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 px-6 py-8">
-        <p className="text-sm text-gray-300">Loading...</p>
+      <div className="min-h-screen bg-gray-50 px-4 sm:px-6 py-8">
+        <p className="text-sm text-gray-400">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-6 py-8">
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 py-6 sm:py-8">
 
       {/* Page header */}
       <div className="mb-6">
@@ -138,18 +142,16 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
 
         <ChartCard title="Weekly report">
-          <div className="h-64">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData} barSize={28}>
+              <BarChart data={weeklyData} barSize={24}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
                 <YAxis
                   allowDecimals={false}
                   domain={[0, maxTasks]}
                   ticks={Array.from({ length: maxTasks + 1 }, (_, i) => i)}
-                  tick={{ fontSize: 12, fill: '#9ca3af' }}
-                  axisLine={false}
-                  tickLine={false}
+                  tick={{ fontSize: 12 }}
                 />
                 <Tooltip {...tooltipStyle} />
                 <Bar dataKey="tasks" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
@@ -159,16 +161,23 @@ export default function Dashboard() {
         </ChartCard>
 
         <ChartCard title="Monthly report">
-          <div className="h-64">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={monthlyData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="70%">
+                <Pie
+                  data={monthlyData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="70%"
+                >
                   {monthlyData.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip {...tooltipStyle} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px' }} />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -178,16 +187,23 @@ export default function Dashboard() {
 
       {/* Categories overview */}
       <ChartCard title="Categories overview">
-        <div className="h-80">
+        <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="70%">
+              <Pie
+                data={categoryData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius="70%"
+              >
                 {categoryData.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip {...tooltipStyle} />
-              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px' }} />
+              <Legend wrapperStyle={{ fontSize: '12px' }} />
             </PieChart>
           </ResponsiveContainer>
         </div>

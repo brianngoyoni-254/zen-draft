@@ -6,7 +6,8 @@ import PendingTasks from '../components/homepage/pending-tasks'
 import CompletedTasks from '../components/homepage/completed-tasks'
 import { useLocation } from 'react-router-dom'
 
-const API = 'http://localhost:3001'
+// IMPORT Api
+import { getTasks, updateTask } from '../services/api'
 
 export default function Home() {
 
@@ -15,65 +16,102 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const location = useLocation()
 
+  // FETCH TASKS
   useEffect(() => {
     const fetchTasks = async () => {
       setLoading(true)
+
       try {
+        const data = await getTasks()
+
         const today = new Date().toLocaleDateString('en-CA')
-        const res = await fetch(`${API}/tasks`)
-        const data = await res.json()
-        
-        setTasks(data.filter(t => t.deadline && t.deadline.startsWith(today)))
+
+        const todayTasks = data.filter(
+          t => t.deadline && t.deadline.startsWith(today)
+        )
+
+        setTasks(todayTasks)
+
       } catch (err) {
         console.error('Could not fetch tasks:', err)
       } finally {
         setLoading(false)
       }
     }
+
     fetchTasks()
   }, [location.key])
 
-  // complete toggle function
-
+  // TOGGLE COMPLETE
   async function handleToggleComplete(task) {
     try {
-      const res = await fetch(`${API}/tasks/${task.id}`, {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ completed: !task.completed }),
+      const updated = await updateTask(task.id, {
+        completed: !task.completed,
       })
-      const updates = await res.json()
-      setTasks(prev => prev.map(t => t.id === updateYAxisWidth.id ? updated : t))
+
+      setTasks(prev =>
+        prev.map(t => (t.id === updated.id ? updated : t))
+      )
+
     } catch (err) {
       console.error('Could not update task:', err)
-      
     }
   }
 
+  // PENDING TASKS (SAFE SORT)
   const pending = tasks
     .filter(t => !t.completed)
     .sort((a, b) => {
       const order = { high: 0, medium: 1, low: 2 }
-      return order[a.priority] - order[b.priority]
+      return (order[a.priority] ?? 3) - (order[b.priority] ?? 3)
     })
 
+  // COMPLETED TASKS
   const completed = tasks.filter(t => t.completed)
 
   return (
 
-    <div className="min-h-screen w-full bg-gray-50">
+    <div className="min-h-screen w-full bg-gray-50 overflow-x-hidden">
 
       <Greeting />
 
-      <div className="w-full px-6 py-8 space-y-6">
+      {/* RESPONSIVE WRAPPER (NO OVERFLOW) */}
+      <div className="w-full max-w-full px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-5 sm:space-y-6">
 
-        <QuickNav />
-        <ProgressBar total={tasks.length} done={completed.length} loading={loading} />
+        {/* QUICK NAV */}
+        <div className="w-full max-w-full overflow-hidden">
+          <QuickNav />
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* PROGRESS BAR */}
+        <div className="w-full max-w-full overflow-hidden">
+          <ProgressBar
+            total={tasks.length}
+            done={completed.length}
+            loading={loading}
+          />
+        </div>
 
-          <PendingTasks tasks={pending} loading={loading} />
-          <CompletedTasks tasks={completed} loading={loading} />
+        {/* GRID: prevents overflow on small phones */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full max-w-full">
+
+          {/* Pending */}
+          <div className="min-w-0 w-full overflow-hidden">
+            <PendingTasks
+              tasks={pending}
+              loading={loading}
+              onToggle={handleToggleComplete}
+            />
+          </div>
+
+          {/* Completed */}
+          <div className="min-w-0 w-full overflow-hidden">
+            <CompletedTasks
+              tasks={completed}
+              loading={loading}
+              onToggle={handleToggleComplete}
+            />
+          </div>
 
         </div>
 

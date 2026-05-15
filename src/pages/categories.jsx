@@ -1,7 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { Check, Folders, Pen, Plus, X } from 'lucide-react'
 
-const API = 'http://localhost:3001'
+// ✅ IMPORT API FUNCTIONS
+import {
+  getTasks,
+  updateTask,
+  deleteTask,
+  getCategories,
+  createCategory,
+  deleteCategory,
+} from '../services/api'
 
 const TAG_PALETTE = [
   'bg-blue-100 text-blue-800',
@@ -19,7 +27,6 @@ function toId(label) {
 
 export default function Categories() {
 
-  // STATES
   const [categories, setCategories] = useState([])
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -33,22 +40,25 @@ export default function Categories() {
   const [editName, setEditName] = useState('')
   const [editCat, setEditCat] = useState('')
 
-  // HOOKS
   useEffect(() => {
     async function load() {
       try {
-        const [catRes, taskRes] = await Promise.all([
-          fetch(`${API}/categories`),
-          fetch(`${API}/tasks`),
+        const [cats, taskData] = await Promise.all([
+          getCategories(),
+          getTasks(),
         ])
-        setCategories(await catRes.json())
-        setTasks(await taskRes.json())
+
+        // ✅ ensure arrays even if API returns null/undefined
+        setCategories(Array.isArray(cats) ? cats : [])
+        setTasks(Array.isArray(taskData) ? taskData : [])
+
       } catch (err) {
         console.error('Could not fetch data:', err)
       } finally {
         setLoading(false)
       }
     }
+
     load()
   }, [])
 
@@ -56,9 +66,12 @@ export default function Categories() {
     if (addingCat) newCatInputRef.current?.focus()
   }, [addingCat])
 
-  // Tag Colours
+  // ✅ safer mapping (prevents crash if categories empty)
   const tagClasses = Object.fromEntries(
-    categories.map((c, i) => [c.id, TAG_PALETTE[i % TAG_PALETTE.length]])
+    (categories || []).map((c, i) => [
+      c?.name,
+      TAG_PALETTE[i % TAG_PALETTE.length]
+    ])
   )
 
   const filtered =
@@ -66,43 +79,46 @@ export default function Categories() {
       ? tasks
       : tasks.filter((t) => t.category === activeFilter)
 
-  
-  // Category Functions
   async function handleAddCategory() {
     const label = newCatLabel.trim()
-    if (!label) { setAddingCat(false); setNewCatLabel(''); return }
+
+    if (!label) {
+      setAddingCat(false)
+      setNewCatLabel('')
+      return
+    }
 
     const id = toId(label)
+
     if (categories.find((c) => c.id === id)) {
-      setNewCatLabel(''); setAddingCat(false); return
+      setNewCatLabel('')
+      setAddingCat(false)
+      return
     }
 
     try {
-      const res = await fetch(`${API}/categories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, name: label }),
-      })
-      const saved = await res.json()
+      const saved = await createCategory({ id, name: label })
       setCategories((prev) => [...prev, saved])
     } catch (err) {
       console.error('Could not add category:', err)
     }
+
     setNewCatLabel('')
     setAddingCat(false)
   }
 
   async function handleDeleteCategory(catId) {
     try {
-      await fetch(`${API}/categories/${catId}`, { method: 'DELETE' })
+      await deleteCategory(catId)
+
       setCategories((prev) => prev.filter((c) => c.id !== catId))
+
       if (activeFilter === catId) setActiveFilter('All')
     } catch (err) {
       console.error('Could not delete category:', err)
     }
   }
 
-  // Task functions
   function handleEditTask(task) {
     setEditingTaskId(task.id)
     setEditName(task.name)
@@ -110,25 +126,29 @@ export default function Categories() {
   }
 
   async function handleSaveTask(id) {
-    const updated = { name: editName.trim() || 'Untitled', category: editCat }
+    const updated = {
+      name: editName.trim() || 'Untitled',
+      category: editCat,
+    }
+
     try {
-      await fetch(`${API}/tasks/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      })
+      await updateTask(id, updated)
+
       setTasks((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, ...updated } : t))
+        prev.map((t) =>
+          t.id === id ? { ...t, ...updated } : t
+        )
       )
     } catch (err) {
       console.error('Could not update task:', err)
     }
+
     setEditingTaskId(null)
   }
 
   async function handleDeleteTask(id) {
     try {
-      await fetch(`${API}/tasks/${id}`, { method: 'DELETE' })
+      await deleteTask(id)
       setTasks((prev) => prev.filter((t) => t.id !== id))
       if (editingTaskId === id) setEditingTaskId(null)
     } catch (err) {
@@ -137,23 +157,25 @@ export default function Categories() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-6 py-8">
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
-      {/* Page header */}
+      {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
-          <Folders size={18} className="text-violet-500" />
-          <h1 className="text-sm font-semibold text-gray-800">Categories</h1>
+          <Folders size={18} className="text-violet-500 shrink-0" />
+          <h1 className="text-sm font-semibold text-gray-800">
+            Categories
+          </h1>
         </div>
         <p className="text-xs text-gray-400">
           Browse and manage tasks by category.
         </p>
       </div>
 
-      <div className="max-w-2xl">
+      <div className="max-w-2xl w-full">
 
-        {/* Filter */}
-        <div className="flex flex-wrap items-center gap-2 mb-6">
+        {/* FILTER BAR (FIXED RESPONSIVENESS) */}
+        <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 mb-6 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0">
 
           {/* Add category */}
           {addingCat ? (
@@ -163,145 +185,153 @@ export default function Categories() {
               onChange={(e) => setNewCatLabel(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleAddCategory()
-                if (e.key === 'Escape') { setAddingCat(false); setNewCatLabel('') }
+                if (e.key === 'Escape') {
+                  setAddingCat(false)
+                  setNewCatLabel('')
+                }
               }}
               onBlur={handleAddCategory}
-              placeholder="Category name…"
-              className="px-3 py-1.5 text-sm rounded-full border border-violet-400 outline-none w-36 focus:ring-2 focus:ring-violet-100 bg-white"
+              placeholder="Category…"
+              className="px-3 py-1.5 text-sm rounded-full border border-violet-400 outline-none w-32 sm:w-36 bg-white shrink-0"
             />
           ) : (
             <button
               onClick={() => setAddingCat(true)}
-              title="Add category"
-              className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 text-gray-400 text-lg flex items-center justify-center hover:bg-violet-100 hover:border-violet-300 hover:text-violet-600 transition"
+              className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 text-gray-400 flex items-center justify-center hover:bg-violet-100 hover:text-violet-600 shrink-0"
             >
-              <Plus />
-
+              <Plus size={16} />
             </button>
           )}
 
-          {/* All */}
+          {/* ALL */}
           <button
-            onClick={() => { setActiveFilter('All'); setEditingTaskId(null) }}
-            className={`px-4 py-1.5 rounded-full text-sm border transition-all ${
+            onClick={() => {
+              setActiveFilter('All')
+              setEditingTaskId(null)
+            }}
+            className={`px-3 sm:px-4 py-1.5 rounded-full text-sm border whitespace-nowrap shrink-0 ${
               activeFilter === 'All'
                 ? 'bg-gray-800 text-white border-gray-800'
-                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                : 'bg-white text-gray-500 border-gray-200'
             }`}
           >
             All
           </button>
 
-          {/* Categories */}
+          {/* CATEGORIES */}
           {categories.map((cat) => (
-            <div key={cat.id} className="relative group/pill flex items-center">
+            <div key={cat.id} className="relative group flex items-center shrink-0">
+
               <button
-                onClick={() => { setActiveFilter(cat.id); setEditingTaskId(null) }}
-                className={`px-4 py-1.5 rounded-full text-sm border transition-all pr-7 ${
+                onClick={() => {
+                  setActiveFilter(cat.id)
+                  setEditingTaskId(null)
+                }}
+                className={`px-3 sm:px-4 py-1.5 rounded-full text-sm border whitespace-nowrap pr-6 sm:pr-7 ${
                   activeFilter === cat.id
                     ? 'bg-gray-800 text-white border-gray-800'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    : 'bg-white text-gray-500 border-gray-200'
                 }`}
               >
                 {cat.name}
               </button>
+
               <button
-                onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id) }}
-                title={`Delete "${cat.name}"`}
-                className={`absolute right-2 text-xs font-bold opacity-0 group-hover/pill:opacity-100 transition-opacity ${
-                  activeFilter === cat.id
-                    ? 'text-gray-300 hover:text-white'
-                    : 'text-gray-400 hover:text-red-500'
-                }`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeleteCategory(cat.id)
+                }}
+                className="absolute right-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition"
               >
-                <X />
+                <X size={14} />
               </button>
+
             </div>
           ))}
         </div>
 
-        {/* Task list */}
+        {/* TASK LIST */}
         <div className="flex flex-col gap-3">
+
           {loading ? (
-            <p className="text-sm text-gray-300 text-center py-10">Loading...</p>
+            <p className="text-sm text-gray-300 text-center py-10">
+              Loading...
+            </p>
           ) : filtered.length === 0 ? (
             <div className="text-center py-10">
               <Folders size={32} className="mx-auto text-gray-200 mb-2" />
-              <p className="text-sm text-gray-300">No tasks in this category.</p>
+              <p className="text-sm text-gray-300">
+                No tasks in this category.
+              </p>
             </div>
           ) : (
             filtered.map((task) =>
               editingTaskId === task.id ? (
 
-                // Edit row
+                // EDIT
                 <div
                   key={task.id}
-                  className="flex items-center gap-3 bg-white border border-violet-200 rounded-xl px-4 py-3"
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 bg-white border border-violet-200 rounded-xl px-3 sm:px-4 py-3"
                 >
                   <input
                     autoFocus
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveTask(task.id)
-                      if (e.key === 'Escape') setEditingTaskId(null)
-                    }}
-                    className="flex-1 text-sm text-gray-800 bg-transparent outline-none"
+                    className="flex-1 text-sm text-gray-800 outline-none"
                   />
+
                   <select
                     value={editCat}
                     onChange={(e) => setEditCat(e.target.value)}
-                    className="text-xs rounded-full border border-gray-200 bg-gray-50 text-gray-600 px-3 py-1 outline-none cursor-pointer"
+                    className="text-xs rounded-full border px-2 py-1 bg-gray-50"
                   >
                     {categories.map((c) => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
-                  <button
-                    onClick={() => handleSaveTask(task.id)}
-                    className="text-emerald-600 hover:text-emerald-800 text-sm font-medium transition px-1"
-                  >
-                    <Check />
-                  </button>
-                  <button
-                    onClick={() => setEditingTaskId(null)}
-                    className="text-gray-400 hover:text-gray-600 text-sm transition px-1"
-                  >
-                   <X />
-                  </button>
+
+                  <div className="flex gap-2">
+                    <button onClick={() => handleSaveTask(task.id)}>
+                      <Check size={16} className="text-emerald-600" />
+                    </button>
+
+                    <button onClick={() => setEditingTaskId(null)}>
+                      <X size={16} className="text-gray-400" />
+                    </button>
+                  </div>
                 </div>
 
               ) : (
 
-                // Display row
+                // DISPLAY
                 <div
                   key={task.id}
-                  className="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-4 py-3 hover:border-gray-200 transition group"
+                  className="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-3 sm:px-4 py-3"
                 >
-                  <span className="flex-1 text-sm text-gray-800">{task.name}</span>
-                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${tagClasses[task.category] ?? 'bg-gray-100 text-gray-600'}`}>
+                  <span className="flex-1 text-sm text-gray-800 min-w-0 truncate">
+                    {task.name}
+                  </span>
+
+                  <span className={`text-xs px-2 sm:px-3 py-1 rounded-full whitespace-nowrap ${
+                    tagClasses[task.category] ?? 'bg-gray-100 text-gray-600'
+                  }`}>
                     {task.category}
                   </span>
-                  <button
-                    onClick={() => handleEditTask(task)}
-                    title="Edit"
-                    className="text-gray-300 hover:text-gray-600 text-sm opacity-0 group-hover:opacity-100 transition"
-                  >
-                    <Pen />
+
+                  <button onClick={() => handleEditTask(task)}>
+                    <Pen size={14} className="text-gray-400" />
                   </button>
-                  <button
-                    onClick={() => handleDeleteTask(task.id)}
-                    title="Delete"
-                    className="text-gray-300 hover:text-red-500 text-sm opacity-0 group-hover:opacity-100 transition"
-                  >
-                    <X />
+
+                  <button onClick={() => handleDeleteTask(task.id)}>
+                    <X size={14} className="text-gray-400 hover:text-red-500" />
                   </button>
                 </div>
               )
             )
           )}
         </div>
-
       </div>
     </div>
   )
